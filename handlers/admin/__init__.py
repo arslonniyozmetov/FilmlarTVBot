@@ -1,2 +1,6 @@
 from . import start
-from . import *
+from . import channels
+from . import add_movie
+from . import movies
+from . import statistics
+from . import subscribers

@@ -14,7 +14,8 @@ else:
 CHANNELS = [
     "@filmlar_kinolar_multfilmlar",
 ]
-MOVIES_FILE = 'data/movies.json'
-CHANNELS_FILE = 'data/channels.json'
-USERS_FILE = 'data/users.json'
-LOG_FILE = 'data/logs.json'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+USERS_FILE = os.path.join(BASE_DIR, "../data/users.json")
+MOVIES_FILE = os.path.join(BASE_DIR, "../data/movies.json")
+CHANNELS_FILE = os.path.join(BASE_DIR, "../data/channels.json")
+LOGS_FILE = os.path.join(BASE_DIR, "../data/logs.json")

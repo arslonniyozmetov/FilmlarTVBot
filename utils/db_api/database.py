@@ -1,26 +1,16 @@
-import os
 import json
+from data.config import MOVIES_FILE
 
-MOVIES_FILE = 'data/movies.json'
-
-async def get_film_by_code(code):
-    if not os.path.exists(MOVIES_FILE):
+async def get_film_by_code(code: str):
+    if not code.isdigit():
         return None
-
-    with open(MOVIES_FILE, "r") as f:
-        data = json.load(f)
-
-    for movie in data.get("movies", []):
-        if str(movie['id']) == str(code):
-            return {
-                "title": movie['name'],
-                "genre": movie['genre'],
-                "country": movie['country'],
-                "language": movie['language'],
-                "quality": movie['quality'],
-                "year": movie['year'],
-                "duration": movie['duration'],
-                "rating": movie['rating'],
-                "file_id": movie['file_id']
-            }
+    code = int(code)
+    try:
+        with open(MOVIES_FILE, "r") as f:
+            movies = json.load(f).get("movies", [])
+        for movie in movies:
+            if movie["id"] == code:
+                return movie
+    except:
+        pass
     return None

@@ -7,7 +7,7 @@ from handlers.admin.start import register_user
 from keyboards.default.admin import admin_menu
 from loader import dp, bot
 from utils.db_api.database import get_film_by_code
-from handlers.users.check_subs import check_subscription
+from utils.misc.check_subscription import check_subscription
 from keyboards.inline.check_subs import check_subs_kb
 from utils.misc.logger import log_movie_view
 
@@ -51,7 +51,7 @@ async def get_film(message: types.Message):
         await log_movie_view(int(message.text), message.from_user.id)  # <-- log yozildi
         text = f"""
 ━━━━━━━━━━━━━━━━
-🎬 *{film['title']}*
+🎬 *{film['name']}*
 
 🎞 *Janr:* {film['genre']}
 📆 *Yil:* {film['year']}

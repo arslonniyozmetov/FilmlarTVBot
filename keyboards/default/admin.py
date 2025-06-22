@@ -1,10 +1,7 @@
-from aiogram import types
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 def admin_menu():
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add("🎬 Yangi Kino", "📡 Yangi Kanal")
-    keyboard.add("📁 Kinolar", "📺 Kanallar")
-    keyboard.add("📊 Statistika")
-    keyboard.add("👥 Obunachilar")
-    return keyboard
-
+    kb = ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.add("🎬 Yangi Kino", "📡 Kanallar")
+    kb.add("📁 Kinolar", "📊 Statistika", "👥 Obunachilar")
+    return kb

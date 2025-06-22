@@ -1,4 +1,4 @@
-from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.dispatcher.filters.state import StatesGroup, State
 
 class AddMovie(StatesGroup):
     WaitingForMovie = State()
@@ -11,9 +11,9 @@ class AddMovie(StatesGroup):
     WaitingForDuration = State()
     WaitingForRating = State()
 
+class AddChannel(StatesGroup):
+    WaitingForChannelLink = State()
+
 class EditMovie(StatesGroup):
     WaitingForText = State()
     WaitingForVideo = State()
-
-class AddChannel(StatesGroup):
-    WaitingForChannelLink = State()
