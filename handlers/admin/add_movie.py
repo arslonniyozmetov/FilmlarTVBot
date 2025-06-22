@@ -1,21 +1,23 @@
 import json, os
 from aiogram import types
 from aiogram.dispatcher import FSMContext
+from aiogram.types import ReplyKeyboardRemove
+
 from loader import dp
 from states.admin_states import AddMovie
 from keyboards.default.admin import admin_menu
 from data.config import MOVIES_FILE
 
-# 🎬 Kino qo‘shish
+# 🎬 Kino qo‘shish boshlanishi
 @dp.message_handler(lambda msg: msg.text == "🎬 Yangi Kino")
 async def add_movie_start(message: types.Message):
-    # eski keyboardni o‘chiramiz va yangi "Bekor qilish" tugmasini chiqaramiz
     cancel_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     cancel_kb.add("🚫 Bekor qilish")
     await message.answer("🎞 Kino videosini yuboring:", reply_markup=cancel_kb)
     await AddMovie.WaitingForMovie.set()
 
-@dp.message_handler(lambda msg: msg.text == "🚫 Bekor qilish", state='*')
+# Bekor qilish tugmasi
+@dp.message_handler(lambda msg: msg.text == "🚫 Bekor qilish", state="*")
 async def cancel_process(message: types.Message, state: FSMContext):
     await state.finish()
     await message.answer("❌ Jarayon bekor qilindi.", reply_markup=admin_menu())
@@ -76,6 +78,36 @@ async def add_movie_rating(message: types.Message, state: FSMContext):
     await state.update_data(rating=message.text)
 
     movie_data = await state.get_data()
+    await message.answer("✅ Ma'lumotlar to‘liq kiritildi.", reply_markup=ReplyKeyboardRemove())
+    # Avval videoni yuboramiz
+    await message.answer_video(
+        video=movie_data['file_id'],
+        caption=(
+            f"🎞 Nomi: {movie_data['name']}\n"
+            f"🎭 Janr: {movie_data['genre']}\n"
+            f"🗣 Til: {movie_data['language']}\n"
+            f"📀 Sifat: {movie_data['quality']}\n"
+            f"🌏 Davlat: {movie_data['country']}\n"
+            f"📅 Yil: {movie_data['year']}\n"
+            f"⏳ Davomiylik: {movie_data['duration']}\n"
+            f"⭐ IMDb: {movie_data['rating']}\n"
+            "\n<b>Tasdiqlaysizmi?</b>"
+        ),
+        parse_mode="HTML",
+        reply_markup=types.InlineKeyboardMarkup().add(
+            types.InlineKeyboardButton("✅ Tasdiqlash", callback_data="confirm_movie"),
+            types.InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_movie")
+        ),
+    )
+
+    await AddMovie.Confirming.set()
+
+
+# Tasdiqlash callback
+@dp.callback_query_handler(lambda c: c.data == "confirm_movie", state=AddMovie.Confirming)
+async def confirm_movie(callback_query: types.CallbackQuery, state: FSMContext):
+    movie_data = await state.get_data()
+
     os.makedirs("data", exist_ok=True)
     movies = {"movies": []}
     if os.path.exists(MOVIES_FILE):
@@ -88,5 +120,12 @@ async def add_movie_rating(message: types.Message, state: FSMContext):
     with open(MOVIES_FILE, "w") as f:
         json.dump(movies, f, indent=4)
 
-    await message.answer(f"✅ Kino qo‘shildi! ID: {movie_id}", reply_markup=admin_menu())
+    await callback_query.message.edit_text(f"✅ Kino qo‘shildi! ID: {movie_id}", reply_markup=admin_menu())
+    await state.finish()
+
+# Bekor qilish callback
+@dp.callback_query_handler(lambda c: c.data == "cancel_movie", state=AddMovie.Confirming)
+async def cancel_movie(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.delete()
+    await callback_query.message.answer("❌ Jarayon bekor qilindi.", reply_markup=admin_menu())
     await state.finish()

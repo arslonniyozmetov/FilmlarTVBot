@@ -4,7 +4,6 @@ from collections import Counter
 
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from handlers.admin.statistics import LOG_FILE
 from keyboards.default.admin import admin_menu

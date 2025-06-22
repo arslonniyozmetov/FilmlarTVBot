@@ -10,7 +10,7 @@ class AddMovie(StatesGroup):
     WaitingForYear = State()
     WaitingForDuration = State()
     WaitingForRating = State()
-
+    Confirming = State()
 class AddChannel(StatesGroup):
     WaitingForChannelLink = State()
 
