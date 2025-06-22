@@ -65,7 +65,7 @@ async def get_film(message: types.Message):
 ⭐ *IMDb:* {film['rating']}/10
 ━━━━━━━━━━━━━━━━
 
-👉 [📺 Kanalimiz](https://t.me/filmlar_kinolar_multfilmlar) | [🤖 Bot: @filmlar_tv_robot]
+👉 [📺 FILMLAR TV](https://t.me/filmlar_kinolar_multfilmlar) | [🤖 Bot: @filmlar_tv_robot]
 """
         await message.answer_video(
             film['file_id'],
@@ -73,7 +73,7 @@ async def get_film(message: types.Message):
             parse_mode="Markdown",
         )
     else:
-        await message.answer("❌ Bunday kod bilan kino topilmadi.")
+        await message.answer("❌ Bunday kodli kino topilmadi.")
 
 
 # "Obuna bo‘ldim" tugmasi uchun qayta tekshirish

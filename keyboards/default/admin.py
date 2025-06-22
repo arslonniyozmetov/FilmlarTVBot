@@ -1,4 +1,4 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup
 
 def admin_menu():
     kb = ReplyKeyboardMarkup(resize_keyboard=True)

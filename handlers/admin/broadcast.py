@@ -1,5 +1,3 @@
-# handlers/admin/broadcast.py
-
 import os
 import json
 import asyncio
