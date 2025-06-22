@@ -14,3 +14,7 @@ else:
 CHANNELS = [
     "@filmlar_kinolar_multfilmlar",
 ]
+MOVIES_FILE = 'data/movies.json'
+CHANNELS_FILE = 'data/channels.json'
+USERS_FILE = 'data/users.json'
+LOG_FILE = 'data/logs.json'

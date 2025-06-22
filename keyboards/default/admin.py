@@ -5,5 +5,6 @@ def admin_menu():
     keyboard.add("🎬 Yangi Kino", "📡 Yangi Kanal")
     keyboard.add("📁 Kinolar", "📺 Kanallar")
     keyboard.add("📊 Statistika")
-    keyboard.add("👥 Obunachilar", "❓ Yordam")
+    keyboard.add("👥 Obunachilar")
     return keyboard
+
