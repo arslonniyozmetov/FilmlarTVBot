@@ -41,7 +41,3 @@ async def send_subscribers_page(chat_id, page=1):
 
     await dp.bot.send_message(chat_id, text, reply_markup=kb)
 
-
-def register_handlers(dp):
-    dp.register_message_handler(subscribers, lambda msg: msg.text == "👥 Obunachilar")
-    dp.register_callback_query_handler(paginate_subscribers, lambda c: c.data.startswith("subscribers_page_"))

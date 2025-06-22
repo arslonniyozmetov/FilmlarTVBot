@@ -52,7 +52,7 @@ async def statistics(message: types.Message):
     text = (
         "<b>📊 Statistika:</b>\n\n"
         f"🎬 <b>Jami kinolar:</b> {movies_count} ta\n"
-        f"🎥 <b>Eng mashhur kino:</b> {most_popular} ({top_views} marta)\n"
+        f"🎥 <b>Eng mashhur kino:</b> {most_popular} ({top_views} marta, ID: {top_movie_id})\n"
         f"👥 <b>Foydalanuvchilar:</b> {users_count} ta\n"
         f"🆕 <b>Bugun qo‘shilgan:</b> {today_count} ta"
     )

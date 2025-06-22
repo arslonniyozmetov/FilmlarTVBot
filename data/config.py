@@ -1,4 +1,5 @@
 import os
+import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,11 +12,21 @@ if ADMINS:
 else:
     ADMINS = []
 
-CHANNELS = [
-    "@filmlar_kinolar_multfilmlar",
-]
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-USERS_FILE = os.path.join(BASE_DIR, "../data/users.json")
-MOVIES_FILE = os.path.join(BASE_DIR, "../data/movies.json")
-CHANNELS_FILE = os.path.join(BASE_DIR, "../data/channels.json")
-LOGS_FILE = os.path.join(BASE_DIR, "../data/logs.json")
+DATA_DIR = os.path.join(BASE_DIR, "../data")
+
+USERS_FILE = os.path.join(DATA_DIR, "users.json")
+MOVIES_FILE = os.path.join(DATA_DIR, "movies.json")
+CHANNELS_FILE = os.path.join(DATA_DIR, "channels.json")
+LOGS_FILE = os.path.join(DATA_DIR, "logs.json")
+
+# 📡 Kanallarni channels.json dan yuklab olish
+CHANNELS = []
+if os.path.exists(CHANNELS_FILE):
+    try:
+        with open(CHANNELS_FILE, "r") as f:
+            data = json.load(f)
+            for channel in data.get("channels", []):
+                CHANNELS.append(channel['link'])
+    except Exception as e:
+        print("Kanallarni yuklashda xatolik:", e)

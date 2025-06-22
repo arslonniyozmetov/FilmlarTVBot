@@ -1,12 +1,18 @@
 import os
 import json
+from collections import Counter
+
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+from handlers.admin.statistics import LOG_FILE
+from keyboards.default.admin import admin_menu
 from loader import dp, bot
 from data.config import ADMINS
 from states.admin_states import EditMovie
-from keyboards.inline.admin import movies_menu, movie_actions_keyboard, edit_fields_keyboard
+from keyboards.default.admin import movie_actions_keyboard
+from keyboards.inline.admin import movies_menu,  edit_fields_keyboard
 
 MOVIES_FILE = 'data/movies.json'
 LOGS_FILE = 'data/logs.json'
@@ -34,21 +40,35 @@ async def send_movies_page(chat_id, page=1):
         data = json.load(f)
     movies = data.get("movies", [])
 
+    # Log fayldan ko‘rishlar sonini o‘qiymiz
+    view_counter = Counter()
+    if os.path.exists(LOG_FILE):
+        with open(LOG_FILE, "r") as f:
+            logs_data = json.load(f)
+            view_counter = Counter(view["movie_id"] for view in logs_data.get("views", []))
+
     total_pages = (len(movies) + PAGE_SIZE - 1) // PAGE_SIZE
     start = (page - 1) * PAGE_SIZE
     end = start + PAGE_SIZE
     movies_slice = movies[start:end]
 
     text = f"🎬 Kinolar ro'yxati ({page}/{total_pages} sahifa):\n\n"
-    for movie in movies_slice:
-        text += f"{movie['id']}⃣ {movie['name']} ({movie['year']}) ⭐ {movie['rating']}\n"
+    text += "#️⃣ ID | 🎞 Nomi       | 👁 Ko‘rishlar\n"
+    text += "-----------------------------------\n"
+
+    for film in movies_slice:
+        movie_id = film['id']
+        name = film['name'][:10]
+        views = view_counter.get(movie_id, 0)
+        text += f"{movie_id:<2} | {name:<10} | {views}\n"
 
     keyboard = movies_menu(movies_slice, page, total_pages)
     await bot.send_message(chat_id, text, reply_markup=keyboard)
 
 # 📄 Kinoni tanlash
 @dp.callback_query_handler(lambda c: c.data.startswith("movie_"))
-async def movie_details(callback_query: types.CallbackQuery):
+async def movie_details(callback_query: types.CallbackQuery, state: FSMContext):
+
     movie_id = int(callback_query.data.split("_")[-1])
 
     with open(MOVIES_FILE, "r") as f:
@@ -58,6 +78,8 @@ async def movie_details(callback_query: types.CallbackQuery):
     if not movie:
         await callback_query.answer("❌ Kino topilmadi.", show_alert=True)
         return
+
+    await state.update_data(movie_id=movie_id)
 
     caption = (
         f"🎞 <b>{movie['name']}</b> ({movie['year']})\n"
@@ -69,7 +91,7 @@ async def movie_details(callback_query: types.CallbackQuery):
         f"⏳ Davomiylik: {movie['duration']}"
     )
 
-    keyboard = movie_actions_keyboard(movie_id)
+    keyboard = movie_actions_keyboard()
     await bot.send_video(
         chat_id=callback_query.message.chat.id,
         video=movie['file_id'],
@@ -79,16 +101,20 @@ async def movie_details(callback_query: types.CallbackQuery):
     )
     await callback_query.answer()
 
-# ✏ Tahrirlash tugmasi
-@dp.callback_query_handler(lambda c: c.data.startswith("edit_"))
-async def edit_movie_start(callback_query: types.CallbackQuery, state: FSMContext):
-    movie_id = int(callback_query.data.split("_")[-1])
-    await state.update_data(movie_id=movie_id)
-    keyboard = edit_fields_keyboard(movie_id)
-    await callback_query.message.answer("✏ Qaysi maydonni tahrirlaymiz?", reply_markup=keyboard)
-    await callback_query.answer()
 
-# Maydon tanlash
+@dp.message_handler(lambda msg: msg.text == "✏ Tahrirlash")
+async def edit_movie_start(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    movie_id = data.get("movie_id")
+
+    if not movie_id:
+        await message.answer("❌ Kino tanlanmagan.")
+        return
+
+    kb = edit_fields_keyboard(movie_id)  # chaqirish
+    await message.answer("✏ Qaysi maydonni tahrirlaymiz?", reply_markup=kb)
+
+
 @dp.callback_query_handler(lambda c: c.data.startswith("field_"), state="*")
 async def edit_field(callback_query: types.CallbackQuery, state: FSMContext):
     data = callback_query.data.split("_")
@@ -133,7 +159,7 @@ async def save_text_field(message: types.Message, state: FSMContext):
     with open(MOVIES_FILE, "w") as f:
         json.dump({"movies": movies}, f, indent=4)
 
-    await message.answer("✅ Ma'lumot yangilandi.")
+    await message.answer("✅ Ma'lumot yangilandi.",reply_markup=admin_menu())
     await state.finish()
 
 # Video faylni saqlash
@@ -157,18 +183,27 @@ async def save_video_field(message: types.Message, state: FSMContext):
     await message.answer("✅ Video yangilandi.")
     await state.finish()
 
-# 🗑 O'chirish
-@dp.callback_query_handler(lambda c: c.data.startswith("delete_"))
-async def delete_movie(callback_query: types.CallbackQuery):
-    movie_id = int(callback_query.data.split("_")[-1])
 
+
+@dp.message_handler(lambda msg: msg.text == "🗑 O'chirish")
+async def delete_movie(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    movie_id = data.get("movie_id")
+
+    if not movie_id:
+        await message.answer("❌ Kino tanlanmagan.")
+        return
+
+    # Fayldan ma'lumotlarni o'qish
     with open(MOVIES_FILE, "r") as f:
         movies = json.load(f).get("movies", [])
 
+    # O'chiriladigan kinoni ajratib olish
     movies = [m for m in movies if m["id"] != movie_id]
 
+    # Yangilangan faylni saqlash
     with open(MOVIES_FILE, "w") as f:
         json.dump({"movies": movies}, f, indent=4)
 
-    await callback_query.message.answer("🗑 Kino o‘chirildi.")
-    await callback_query.answer()
+    await message.answer("🗑 Kino o‘chirildi.", reply_markup=admin_menu())
+    await state.finish()

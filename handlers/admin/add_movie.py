@@ -9,8 +9,16 @@ from data.config import MOVIES_FILE
 # 🎬 Kino qo‘shish
 @dp.message_handler(lambda msg: msg.text == "🎬 Yangi Kino")
 async def add_movie_start(message: types.Message):
-    await message.answer("🎞 Kino videosini yuboring:")
+    # eski keyboardni o‘chiramiz va yangi "Bekor qilish" tugmasini chiqaramiz
+    cancel_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    cancel_kb.add("🚫 Bekor qilish")
+    await message.answer("🎞 Kino videosini yuboring:", reply_markup=cancel_kb)
     await AddMovie.WaitingForMovie.set()
+
+@dp.message_handler(lambda msg: msg.text == "🚫 Bekor qilish", state='*')
+async def cancel_process(message: types.Message, state: FSMContext):
+    await state.finish()
+    await message.answer("❌ Jarayon bekor qilindi.", reply_markup=admin_menu())
 
 @dp.message_handler(content_types=types.ContentType.VIDEO, state=AddMovie.WaitingForMovie)
 async def add_movie_video(message: types.Message, state: FSMContext):
@@ -51,7 +59,7 @@ async def add_movie_country(message: types.Message, state: FSMContext):
 @dp.message_handler(state=AddMovie.WaitingForYear)
 async def add_movie_year(message: types.Message, state: FSMContext):
     if not message.text.isdigit():
-        await message.answer("Faqat raqam kiriting!")
+        await message.answer("❗️Faqat raqam kiriting!")
         return
     await state.update_data(year=message.text)
     await message.answer("🎥 Davomiyligini kiriting:")
@@ -82,16 +90,3 @@ async def add_movie_rating(message: types.Message, state: FSMContext):
 
     await message.answer(f"✅ Kino qo‘shildi! ID: {movie_id}", reply_markup=admin_menu())
     await state.finish()
-
-
-def register_handlers(dp):
-    dp.register_message_handler(add_movie_start, lambda msg: msg.text == "🎬 Yangi Kino")
-    dp.register_message_handler(add_movie_video, content_types=types.ContentType.VIDEO, state=AddMovie.WaitingForMovie)
-    dp.register_message_handler(add_movie_name, state=AddMovie.WaitingForName)
-    dp.register_message_handler(add_movie_genre, state=AddMovie.WaitingForGenre)
-    dp.register_message_handler(add_movie_language, state=AddMovie.WaitingForLanguage)
-    dp.register_message_handler(add_movie_quality, state=AddMovie.WaitingForQuality)
-    dp.register_message_handler(add_movie_country, state=AddMovie.WaitingForCountry)
-    dp.register_message_handler(add_movie_year, state=AddMovie.WaitingForYear)
-    dp.register_message_handler(add_movie_duration, state=AddMovie.WaitingForDuration)
-    dp.register_message_handler(add_movie_rating, state=AddMovie.WaitingForRating)

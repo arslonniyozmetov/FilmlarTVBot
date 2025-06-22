@@ -2,12 +2,12 @@ from aiogram import types
 from aiogram.dispatcher.filters import CommandStart
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
-from data.config import ADMINS, CHANNELS
+from data.config import ADMINS
 from handlers.admin.start import register_user
 from keyboards.default.admin import admin_menu
 from loader import dp, bot
 from utils.db_api.database import get_film_by_code
-from utils.misc.check_subscription import check_subscription
+from utils.misc.check_subscription import check_subscription, get_channels
 from keyboards.inline.check_subs import check_subs_kb
 from utils.misc.logger import log_movie_view
 
@@ -27,13 +27,16 @@ async def bot_start(message: types.Message):
 async def get_film(message: types.Message):
     user_id = message.from_user.id
 
+    # Kanallar ro'yxatini olamiz:
+    channels = await get_channels()
+
     # Obuna tekshiruvi
     is_subscribed = True
     markup = InlineKeyboardMarkup(row_width=1)
-    text = "Iltimos, quyidagi kanalga obuna bo‘ling:\n"
+    text = "Iltimos, quyidagi kanallarga obuna bo‘ling:\n"
 
-    for channel in CHANNELS:
-        status = await check_subscription(bot, user_id, channel)
+    for channel in channels:
+        status = await check_subscription(user_id, channel)
         if not status:
             is_subscribed = False
             chat = await bot.get_chat(channel)
@@ -48,7 +51,7 @@ async def get_film(message: types.Message):
     # Kino qidirish
     film = await get_film_by_code(message.text)
     if film:
-        await log_movie_view(int(message.text), message.from_user.id)  # <-- log yozildi
+        await log_movie_view(int(message.text), message.from_user.id)
         text = f"""
 ━━━━━━━━━━━━━━━━
 🎬 *{film['name']}*
@@ -73,21 +76,20 @@ async def get_film(message: types.Message):
         await message.answer("❌ Bunday kod bilan kino topilmadi.")
 
 
-
-
-
 # "Obuna bo‘ldim" tugmasi uchun qayta tekshirish
 @dp.callback_query_handler(lambda c: c.data == "check_subs")
 async def process_check_subs(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
     user_name = callback_query.from_user.first_name
+
+    channels = await get_channels()
+
     is_subscribed = True
-
     markup = InlineKeyboardMarkup(row_width=1)
-    text = "Iltimos, quyidagi kanalga obuna bo‘ling:\n"
+    text = "Iltimos, quyidagi kanallarga obuna bo‘ling:\n"
 
-    for channel in CHANNELS:
-        status = await check_subscription(bot, user_id, channel)
+    for channel in channels:
+        status = await check_subscription(user_id, channel)
         if not status:
             is_subscribed = False
             chat = await bot.get_chat(channel)
