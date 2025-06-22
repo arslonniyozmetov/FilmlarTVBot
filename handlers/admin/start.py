@@ -3,7 +3,7 @@ import json
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import CommandStart
-from loader import dp
+from loader import dp, bot
 from states.admin_states import AddMovie, AddChannel
 from data.config import ADMINS
 from keyboards.default.admin import admin_menu
@@ -13,21 +13,41 @@ MOVIES_FILE = 'data/movies.json'
 CHANNELS_FILE = 'data/channels.json'
 
 # User registratsiya
-async def register_user(user_id):
+from datetime import datetime
+
+USERS_FILE = 'data/users.json'
+
+from datetime import datetime
+
+async def register_user(user: types.User):
     os.makedirs("data", exist_ok=True)
     data = {"users": []}
+
     if os.path.exists(USERS_FILE):
         with open(USERS_FILE, "r") as f:
             data = json.load(f)
-    if user_id not in data["users"]:
-        data["users"].append(user_id)
+
+    # Agar foydalanuvchi mavjud bo'lmasa, yangi qo'shamiz
+    if not any(u['user_id'] == user.id for u in data["users"]):
+        user_data = {
+            "user_id": user.id,
+            "first_name": user.first_name,
+            "username": user.username or "",
+            "register_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Sana + vaqt
+        }
+        data["users"].append(user_data)
+
         with open(USERS_FILE, "w") as f:
             json.dump(data, f, indent=4)
+
+
+
+
 
 # /start komandasi
 @dp.message_handler(CommandStart())
 async def admin_start(message: types.Message):
-    await register_user(message.from_user.id)
+    await register_user(message.from_user)
     if message.from_user.id in ADMINS:
         await message.answer("👑 Admin panelga xush kelibsiz!", reply_markup=admin_menu())
     else:
@@ -144,22 +164,115 @@ async def add_channel_link(message: types.Message, state: FSMContext):
 
 
 # Statistika
+from aiogram import types
+from loader import dp
+import os
+import json
+from datetime import datetime
+from collections import Counter
+
+USERS_FILE = 'data/users.json'
+MOVIES_FILE = 'data/movies.json'
+LOG_FILE = 'data/logs.json'
+
 @dp.message_handler(lambda msg: msg.text == "📊 Statistika")
 async def statistics(message: types.Message):
-    movies_count = channels_count = 0
-    if os.path.exists(MOVIES_FILE):
-        with open(MOVIES_FILE, "r") as f:
-            movies_count = len(json.load(f).get("movies", []))
-    if os.path.exists(CHANNELS_FILE):
-        with open(CHANNELS_FILE, "r") as f:
-            channels_count = len(json.load(f).get("channels", []))
-    await message.answer(f"🎬 Kinolar: {movies_count}\n📡 Kanallar: {channels_count}")
-
-# Obunachilar soni
-@dp.message_handler(lambda msg: msg.text == "👥 Obunachilar")
-async def subscribers(message: types.Message):
-    users_count = 0
+    # Users
+    users_count = today_count = 0
     if os.path.exists(USERS_FILE):
         with open(USERS_FILE, "r") as f:
-            users_count = len(json.load(f).get("users", []))
-    await message.answer(f"👥 Obunachilar: {users_count} ta")
+            users = json.load(f).get("users", [])
+            users_count = len(users)
+            today = datetime.now().strftime("%Y-%m-%d")
+            today_count = sum(
+                1 for user in users
+                if user.get("register_date", "").startswith(today)
+            )
+
+    # Movies
+    movies_count = 0
+    movies = []
+    if os.path.exists(MOVIES_FILE):
+        with open(MOVIES_FILE, "r") as f:
+            movies = json.load(f).get("movies", [])
+            movies_count = len(movies)
+
+    # Log
+    views = []
+    if os.path.exists(LOG_FILE):
+        with open(LOG_FILE, "r") as f:
+            views = json.load(f).get("views", [])
+
+    # Calculate most popular
+    view_counter = Counter(view["movie_id"] for view in views)
+    if view_counter:
+        top_movie_id = view_counter.most_common(1)[0][0]
+        top_movie = next((m for m in movies if m["id"] == top_movie_id), None)
+        most_popular = top_movie["name"] if top_movie else "Noma'lum"
+        top_views = view_counter[top_movie_id]
+    else:
+        most_popular = "Ma'lumot yo'q"
+        top_views = 0
+
+    text = (
+        "<b>📊 Statistika:</b>\n\n"
+        f"🎬 <b>Jami kinolar:</b> {movies_count} ta\n"
+        f"🎥 <b>Eng mashhur kino:</b> {most_popular} ({top_views} marta)\n"
+        f"👥 <b>Foydalanuvchilar:</b> {users_count} ta\n"
+        f"🆕 <b>Bugun qo‘shilgan:</b> {today_count} ta"
+    )
+
+    await message.answer(text, parse_mode="HTML")
+
+
+
+# Obunachilar soni
+import json
+import os
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+PAGE_SIZE = 20
+
+@dp.message_handler(lambda msg: msg.text == "👥 Obunachilar")
+async def subscribers(message: types.Message):
+    await send_subscribers_page(message.chat.id, page=1)
+
+@dp.callback_query_handler(lambda c: c.data.startswith("subscribers_page_"))
+async def paginate_subscribers(callback_query: types.CallbackQuery):
+    page = int(callback_query.data.split("_")[-1])
+    await send_subscribers_page(callback_query.message.chat.id, page)
+    await callback_query.answer()
+
+async def send_subscribers_page(chat_id, page=1):
+    if not os.path.exists(USERS_FILE):
+        await bot.send_message(chat_id, "❌ Hech qanday foydalanuvchi mavjud emas.")
+        return
+
+    with open(USERS_FILE, "r") as f:
+        data = json.load(f)
+
+    users = data.get("users", [])
+    total_pages = (len(users) + PAGE_SIZE - 1) // PAGE_SIZE
+
+    start = (page - 1) * PAGE_SIZE
+    end = start + PAGE_SIZE
+    users_slice = users[start:end]
+
+    text = f"👥 Obunachilar ro‘yxati (Sahifa {page}/{total_pages}):\n\n"
+
+    for i, user in enumerate(users_slice, start=start + 1):
+        username = f"@{user.get('username', '')}" if user.get('username') else "(username yo‘q)"
+        register_date = user.get("register_date", "Noma’lum sana")
+        text += (
+            f"{i}. {user.get('first_name', '')} {username}\n"
+            f"📅 Botga qo‘shilgan: {register_date}\n\n"
+        )
+
+    keyboard = InlineKeyboardMarkup(row_width=2)
+    if page > 1:
+        keyboard.insert(InlineKeyboardButton("⬅ Oldingi", callback_data=f"subscribers_page_{page-1}"))
+    if page < total_pages:
+        keyboard.insert(InlineKeyboardButton("⏭ Keyingi", callback_data=f"subscribers_page_{page+1}"))
+
+    await bot.send_message(chat_id, text, reply_markup=keyboard)
+

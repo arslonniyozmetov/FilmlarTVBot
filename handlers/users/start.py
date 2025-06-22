@@ -9,6 +9,7 @@ from loader import dp, bot
 from utils.db_api.database import get_film_by_code
 from handlers.users.check_subs import check_subscription
 from keyboards.inline.check_subs import check_subs_kb
+from utils.misc.logger import log_movie_view
 
 
 # /start komandasi
@@ -47,6 +48,7 @@ async def get_film(message: types.Message):
     # Kino qidirish
     film = await get_film_by_code(message.text)
     if film:
+        await log_movie_view(int(message.text), message.from_user.id)  # <-- log yozildi
         text = f"""
 ━━━━━━━━━━━━━━━━
 🎬 *{film['title']}*
@@ -60,7 +62,7 @@ async def get_film(message: types.Message):
 ⭐ *IMDb:* {film['rating']}/10
 ━━━━━━━━━━━━━━━━
 
-👉 [📺 Kanalimiz](https://t.me/kanal) | [🤖 Bot: @filmlar_tv_bot]
+👉 [📺 Kanalimiz](https://t.me/kanal) | [🤖 Bot: @filmlar_tv_robot]
 """
         await message.answer_video(
             film['file_id'],
