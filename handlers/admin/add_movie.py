@@ -3,13 +3,14 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove
 
+from filters import AdminFilter
 from loader import dp
 from states.admin_states import AddMovie
 from keyboards.default.admin import admin_menu
 from data.config import MOVIES_FILE
 
 # 🎬 Kino qo‘shish boshlanishi
-@dp.message_handler(lambda msg: msg.text == "🎬 Yangi Kino")
+@dp.message_handler(AdminFilter(), lambda msg: msg.text == "🎬 Yangi Kino")
 async def add_movie_start(message: types.Message):
     cancel_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     cancel_kb.add("🚫 Bekor qilish")
@@ -17,7 +18,7 @@ async def add_movie_start(message: types.Message):
     await AddMovie.WaitingForMovie.set()
 
 # Bekor qilish tugmasi
-@dp.message_handler(lambda msg: msg.text == "🚫 Bekor qilish", state="*")
+@dp.message_handler(AdminFilter(),lambda msg: msg.text == "🚫 Bekor qilish", state="*")
 async def cancel_process(message: types.Message, state: FSMContext):
     await state.finish()
     await message.answer("❌ Jarayon bekor qilindi.", reply_markup=admin_menu())
@@ -120,7 +121,7 @@ async def confirm_movie(callback_query: types.CallbackQuery, state: FSMContext):
     with open(MOVIES_FILE, "w") as f:
         json.dump(movies, f, indent=4)
 
-    await callback_query.message.edit_text(f"✅ Kino qo‘shildi! ID: {movie_id}", reply_markup=admin_menu())
+    await callback_query.message.answer(f"✅ Kino qo‘shildi! ID: {movie_id}", reply_markup=admin_menu())
     await state.finish()
 
 # Bekor qilish callback

@@ -65,7 +65,7 @@ async def get_film(message: types.Message):
 ⭐ *IMDb:* {film['rating']}/10
 ━━━━━━━━━━━━━━━━
 
-👉 [📺 FILMLAR TV](https://t.me/filmlar_kinolar_multfilmlar) | [🤖 Bot: @filmlar_tv_robot]
+👉 [📺 FILMLAR TV](https://t.me/filmlartv_uzz) | [🤖 Bot: @filmlar_tv_robot]
 """
         await message.answer_video(
             film['file_id'],

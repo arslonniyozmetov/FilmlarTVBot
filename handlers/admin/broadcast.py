@@ -6,6 +6,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
+from filters import AdminFilter
 from loader import dp, bot
 from data.config import ADMINS
 from keyboards.default.admin import admin_menu
@@ -18,10 +19,8 @@ class BroadcastState(StatesGroup):
     Confirming = State()
 
 # Tugma bosilganda (xabar yuborish boshlanishi)
-@dp.message_handler(lambda msg: msg.text == "📢 Obunachilarga xabar")
+@dp.message_handler(AdminFilter(),lambda msg: msg.text == "📢 Obunachilarga xabar")
 async def ask_broadcast_content(message: types.Message, state: FSMContext):
-    if message.from_user.id not in ADMINS:
-        return await message.answer("⛔ Siz admin emassiz.")
 
     cancel_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     cancel_kb.add("🚫 Bekor qilish")
@@ -33,7 +32,7 @@ async def ask_broadcast_content(message: types.Message, state: FSMContext):
     await BroadcastState.WaitingForMessage.set()
 
 # Bekor qilish tugmasi (har qanday state da ishlaydi)
-@dp.message_handler(lambda msg: msg.text == "🚫 Bekor qilish", state="*")
+@dp.message_handler(AdminFilter(), lambda msg: msg.text == "🚫 Bekor qilish", state="*")
 async def cancel_broadcast(message: types.Message, state: FSMContext):
     await state.finish()
     await message.answer("❌ Jarayon bekor qilindi.", reply_markup=admin_menu())

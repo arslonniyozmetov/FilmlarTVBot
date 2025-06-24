@@ -3,10 +3,18 @@ import json
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+from filters import AdminFilter
+from keyboards.default.admin import admin_menu
 from loader import dp
 from data.config import ADMINS, CHANNELS_FILE
 from states.admin_states import AddChannel
 
+# Bekor qilish tugmasi
+@dp.message_handler(AdminFilter(),lambda msg: msg.text == "🚫 Bekor qilish", state="*")
+async def cancel_process(message: types.Message, state: FSMContext):
+    await state.finish()
+    await message.answer("❌ Jarayon bekor qilindi.", reply_markup=admin_menu())
 # 📡 Kanallar bo‘limi
 @dp.message_handler(lambda msg: msg.text == "📡 Kanallar")
 async def channels_menu(message: types.Message):
@@ -43,13 +51,24 @@ async def show_channels_menu(message_or_callback):
 # ➕ Kanal qo‘shish
 @dp.callback_query_handler(lambda c: c.data == "add_channel")
 async def add_channel_start(callback_query: types.CallbackQuery):
+    cancel_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    cancel_kb.add("🚫 Bekor qilish")
     await callback_query.answer()
-    await callback_query.message.answer("Kanal linkini yuboring (format: @username):")
+    await callback_query.message.answer("Kanal linkini yuboring (format: @username):",reply_markup=cancel_kb)
     await AddChannel.WaitingForChannelLink.set()
 
 @dp.message_handler(state=AddChannel.WaitingForChannelLink)
 async def process_channel_link(message: types.Message, state: FSMContext):
     channel_link = message.text.strip()
+
+    if not channel_link.startswith("@") or len(channel_link) < 5:
+        await message.answer("❌ Noto'g'ri format. Iltimos, kanal linkini '@username' shaklida yuboring.")
+        return
+
+    # Telegram username format: faqat harf, raqam va pastki chiziq
+    if not channel_link[1:].replace('_', '').isalnum():
+        await message.answer("❌ Noto'g'ri format. Iltimos, '@username' faqat harf, raqam va '_' belgilaridan iborat bo'lishi kerak.")
+        return
 
     os.makedirs("data", exist_ok=True)
     data = {"channels": []}
@@ -66,6 +85,7 @@ async def process_channel_link(message: types.Message, state: FSMContext):
     await message.answer(f"✅ Kanal qo‘shildi: {channel_link}")
     await state.finish()
     await show_channels_menu(message)
+
 
 # 📄 Ro'yxat yangilash
 @dp.callback_query_handler(lambda c: c.data == "list_channels")

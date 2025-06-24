@@ -1,4 +1,6 @@
 from aiogram import types
+
+from filters import AdminFilter
 from loader import dp
 import os
 import json
@@ -9,7 +11,7 @@ USERS_FILE = 'data/users.json'
 MOVIES_FILE = 'data/movies.json'
 LOG_FILE = 'data/logs.json'
 
-@dp.message_handler(lambda msg: msg.text == "📊 Statistika")
+@dp.message_handler(AdminFilter(),lambda msg: msg.text == "📊 Statistika")
 async def statistics(message: types.Message):
     # Users
     users_count = today_count = 0
@@ -38,23 +40,26 @@ async def statistics(message: types.Message):
             views = json.load(f).get("views", [])
 
     # Calculate most popular
+    # Calculate most popular
     view_counter = Counter(view["movie_id"] for view in views)
+
     if view_counter:
         top_movie_id = view_counter.most_common(1)[0][0]
         top_movie = next((m for m in movies if m["id"] == top_movie_id), None)
         most_popular = top_movie["name"] if top_movie else "Noma'lum"
         top_views = view_counter[top_movie_id]
+        top_movie_info = f"{most_popular} ({top_views} marta, ID: {top_movie_id})"
     else:
-        most_popular = "Ma'lumot yo'q"
-        top_views = 0
+        top_movie_info = "Ma'lumot yo'q (0 marta)"
 
     text = (
         "<b>📊 Statistika:</b>\n\n"
         f"🎬 <b>Jami kinolar:</b> {movies_count} ta\n"
-        f"🎥 <b>Eng mashhur kino:</b> {most_popular} ({top_views} marta, ID: {top_movie_id})\n"
+        f"🎥 <b>Eng mashhur kino:</b> {top_movie_info}\n"
         f"👥 <b>Foydalanuvchilar:</b> {users_count} ta\n"
         f"🆕 <b>Bugun qo‘shilgan:</b> {today_count} ta"
     )
 
     await message.answer(text, parse_mode="HTML")
+
 

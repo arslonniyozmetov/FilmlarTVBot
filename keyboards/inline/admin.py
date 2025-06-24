@@ -12,6 +12,18 @@ def movies_menu(movies_slice, page, total_pages):
     kb.row(*nav_buttons)
     return kb
 
+def movie_actions_keyboard(movie_id):
+    kb = InlineKeyboardMarkup(row_width=2)
+    kb.row(
+        InlineKeyboardButton("✏ Tahrirlash", callback_data="edit_movie"),
+        InlineKeyboardButton("🗑 O'chirish", callback_data=f"delete_movie_{movie_id}")
+    )
+    kb.add(
+        InlineKeyboardButton("🚫 Bekor qilish", callback_data="cancel_editing")
+    )
+    return kb
+
+
 def edit_fields_keyboard(movie_id):
     kb = InlineKeyboardMarkup(row_width=2)
     fields = ["name", "genre", "language", "quality", "country", "year", "duration", "rating", "video"]
@@ -20,6 +32,8 @@ def edit_fields_keyboard(movie_id):
         "country": "Davlat", "year": "Yil", "duration": "Davomiylik",
         "rating": "IMDb", "video": "Video"
     }
+
     for field in fields:
         kb.insert(InlineKeyboardButton(field_names[field], callback_data=f"field_{field}_{movie_id}"))
+    kb.add(InlineKeyboardButton("🔙 Orqaga", callback_data="back_to_movie"))
     return kb

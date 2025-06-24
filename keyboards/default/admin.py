@@ -6,8 +6,3 @@ def admin_menu():
     kb.add("📁 Kinolar", "📊 Statistika")
     kb.add("👥 Obunachilar","📢 Obunachilarga xabar")
     return kb
-def movie_actions_keyboard():
-    kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.row("✏ Tahrirlash", "🗑 O'chirish")
-    kb.add("🚫 Bekor qilish")
-    return kb

@@ -1,12 +1,14 @@
 import json, os
 from aiogram import types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+from filters import AdminFilter
 from loader import dp
 from data.config import USERS_FILE
 
 PAGE_SIZE = 20
 
-@dp.message_handler(lambda msg: msg.text == "👥 Obunachilar")
+@dp.message_handler(AdminFilter(),lambda msg: msg.text == "👥 Obunachilar")
 async def subscribers(message: types.Message):
     await send_subscribers_page(message.chat.id, page=1)
 

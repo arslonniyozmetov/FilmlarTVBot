@@ -1,7 +1,11 @@
 {
     "channels": [
         {
-            "id": 1,
+            "id": 2,
+            "link": "@filmlartv_uzz"
+        },
+        {
+            "id": 2,
             "link": "@filmlar_kinolar_multfilmlar"
         }
     ]

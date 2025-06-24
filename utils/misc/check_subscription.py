@@ -4,6 +4,7 @@ from loader import bot
 from data.config import CHANNELS_FILE
 
 async def check_subscription(user_id, channel_link):
+
     """
     Har bitta kanal uchun foydalanuvchining obuna bo‘lganligini tekshiradi
     """
@@ -16,6 +17,7 @@ async def check_subscription(user_id, channel_link):
         return False
 
 async def get_channels():
+
     """
     channels.json dan kanallarni o‘qib olish
     """
